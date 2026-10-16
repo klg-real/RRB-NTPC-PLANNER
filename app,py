@@ -1,0 +1,63 @@
+import os
+from flask import Flask, render_template, request, jsonify
+from google import genai
+from google.genai import types
+
+app = Flask(__name__)
+
+# Initialize the official Google GenAI Client
+# Automatically picks up GEMINI_API_KEY from environment variables
+api_key = os.environ.get("GEMINI_API_KEY")
+client = genai.Client(api_key=api_key) if api_key else genai.Client()
+
+@app.route('/')
+def home():
+    """Renders the main Astro + Crux UI page."""
+    return render_template('index.html')
+
+@app.route('/api/ai-notes', methods=['POST'])
+def get_ai_notes():
+    """Endpoint for generating study notes, formulas, and practice MCQs."""
+    try:
+        data = request.get_json() or {}
+        topic = data.get('topic', 'RRB NTPC General Awareness Strategy')
+        req_type = data.get('type', 'cheat-sheet')
+
+        if req_type == 'cheat-sheet':
+            prompt = f"""
+            You are an expert RRB NTPC Exam Prep Mentor.
+            Provide a concise, high-yield formula & shortcut revision sheet for the topic: '{topic}'.
+            Format your response clearly using bullet points and code/math blocks:
+            1. Core Concepts & Important Formulas
+            2. Top 2 Short Tricks / Time-Saving Hacks for RRB NTPC
+            3. Standard Repeat Pattern Question with Step-by-Step Solution
+            Keep the tone clear, structured, and easy to revise in 2 minutes.
+            """
+        else:
+            prompt = f"""
+            You are an expert RRB NTPC Test Series Designer.
+            Create 3 high-quality Multiple Choice Questions (MCQs) for the topic: '{topic}'.
+            For each question include:
+            - Question Statement
+            - Options (A, B, C, D)
+            - Correct Answer with a 1-line crisp explanation.
+            """
+
+        response = client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                temperature=0.7,
+                max_output_tokens=1000
+            )
+        )
+
+        return jsonify({'success': True, 'notes': response.text})
+
+    except Exception as e:
+        print(f"Error calling Gemini API: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+if __name__ == '__main__':
+    # Runs locally on http://127.0.0.1:5000
+    app.run(debug=True, port=5000)

@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RRB NTPC AI Study Planner | Astro + Crux UI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        astro: { bg: '#0B0F19', card: '#111827', surface: '#1F2937' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #0B0F19; color: #F3F4F6; font-family: 'Plus Jakarta Sans', sans-serif; }
+        .glass-panel { background: rgba(17, 24, 39, 0.8); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); }
+        .custom-checkbox { appearance: none; width: 1.2em; height: 1.2em; border: 2px solid #4B5563; border-radius: 0.3em; cursor: pointer; }
+        .custom-checkbox:checked { background-color: #6366F1; border-color: #6366F1; }
+    </style>
+</head>
+<body class="min-h-screen p-4 sm:p-8">
+    <header class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 mb-8 glass-panel p-5 rounded-2xl">
+        <div class="flex items-center space-x-3">
+            <i class="fa-solid fa-train-subway text-2xl text-cyan-400"></i>
+            <h1 class="text-xl font-bold text-white">RRB NTPC <span class="text-indigo-400">Astro+Crux Planner</span></h1>
+        </div>
+        <div class="flex gap-2">
+            <button onclick="switchTab('syllabus')" id="tab-syllabus" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold bg-indigo-600 text-white">Syllabus</button>
+            <button onclick="switchTab('ai')" id="tab-ai" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold bg-slate-800 text-slate-400">Gemini AI</button>
+            <button onclick="switchTab('mocks')" id="tab-mocks" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold bg-slate-800 text-slate-400">Mock Tests</button>
+            <button onclick="switchTab('timer')" id="tab-timer" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold bg-slate-800 text-slate-400">Timer</button>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto">
+        <!-- SYLLABUS TAB -->
+        <section id="view-syllabus" class="tab-view space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="glass-panel p-5 rounded-2xl border-t-2 border-cyan-400">
+                    <h3 class="font-bold text-white mb-3">Mathematics</h3>
+                    <div id="math-list" class="space-y-2"></div>
+                </div>
+                <div class="glass-panel p-5 rounded-2xl border-t-2 border-purple-400">
+                    <h3 class="font-bold text-white mb-3">Reasoning</h3>
+                    <div id="reasoning-list" class="space-y-2"></div>
+                </div>
+                <div class="glass-panel p-5 rounded-2xl border-t-2 border-amber-400">
+                    <h3 class="font-bold text-white mb-3">General Awareness</h3>
+                    <div id="ga-list" class="space-y-2"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- AI TAB -->
+        <section id="view-ai" class="tab-view hidden grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="glass-panel p-6 rounded-2xl space-y-4">
+                <h3 class="font-bold text-white">Gemini AI Mentor</h3>
+                <select id="ai-topic" class="w-full bg-slate-800 p-2.5 rounded-xl text-xs text-white border border-slate-700">
+                    <option value="Number System">Number System</option>
+                    <option value="Blood Relations">Blood Relations</option>
+                    <option value="Indian Railways GK">Indian Railways GK</option>
+                </select>
+                <div class="flex gap-2">
+                    <button onclick="askAI('cheat-sheet')" class="w-full py-2.5 rounded-xl bg-indigo-600 text-white text-xs font-semibold">Get Formulas</button>
+                    <button onclick="askAI('questions')" class="w-full py-2.5 rounded-xl bg-cyan-600 text-white text-xs font-semibold">Get MCQs</button>
+                </div>
+            </div>
+            <div class="glass-panel p-6 rounded-2xl">
+                <div id="ai-output" class="text-xs text-slate-300 font-mono whitespace-pre-line">Select a topic and click a button to generate study material.</div>
+            </div>
+        </section>
+
+        <!-- MOCKS TAB -->
+        <section id="view-mocks" class="tab-view hidden space-y-6">
+            <div class="glass-panel p-6 rounded-2xl">
+                <h3 class="font-bold text-white mb-4">Mock Test Tracker</h3>
+                <div class="flex gap-2 mb-4">
+                    <input type="text" id="mock-title" placeholder="Mock Title" class="bg-slate-800 p-2 text-xs rounded-xl text-white border border-slate-700">
+                    <input type="number" id="mock-score" placeholder="Score" class="bg-slate-800 p-2 text-xs rounded-xl text-white border border-slate-700 w-24">
+                    <button onclick="addMock()" class="px-4 py-2 bg-emerald-600 text-white text-xs rounded-xl font-semibold">Add Score</button>
+                </div>
+                <ul id="mock-list" class="text-xs space-y-2 text-slate-300"></ul>
+            </div>
+        </section>
+
+        <!-- TIMER TAB -->
+        <section id="view-timer" class="tab-view hidden text-center">
+            <div class="glass-panel p-8 rounded-3xl max-w-md mx-auto space-y-4">
+                <h3 class="font-bold text-white">Focus Timer</h3>
+                <div id="timer-display" class="text-5xl font-mono font-bold text-cyan-400">25:00</div>
+                <button onclick="toggleTimer()" id="timer-btn" class="px-6 py-2.5 bg-indigo-600 text-white text-xs font-semibold rounded-xl">Start Focus Session</button>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        const SYLLABUS = {
+            math: ["Number System", "Decimals & Fractions", "LCM & HCF", "Percentage", "Time & Work", "Profit & Loss"],
+            reasoning: ["Analogies", "Series Completion", "Coding-Decoding", "Syllogism", "Blood Relations"],
+            ga: ["Current Affairs", "Indian History", "Geography", "Indian Polity", "General Science"]
+        };
+
+        let progress = JSON.parse(localStorage.getItem('rrb_progress')) || {};
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-view').forEach(e => e.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(e => {
+                e.classList.remove('bg-indigo-600', 'text-white');
+                e.classList.add('bg-slate-800', 'text-slate-400');
+            });
+            document.getElementById('view-' + tab).classList.remove('hidden');
+            const btn = document.getElementById('tab-' + tab);
+            btn.classList.add('bg-indigo-600', 'text-white');
+            btn.classList.remove('bg-slate-800', 'text-slate-400');
+        }
+
+        function renderSyllabus() {
+            ['math', 'reasoning', 'ga'].forEach(subj => {
+                const container = document.getElementById(subj + '-list');
+                container.innerHTML = SYLLABUS[subj].map((topic, i) => {
+                    const key = subj + '_' + i;
+                    const checked = progress[key] ? 'checked' : '';
+                    return `
+                        <label class="flex items-center space-x-2 text-xs text-slate-300 cursor-pointer">
+                            <input type="checkbox" class="custom-checkbox" ${checked} onchange="toggleTopic('${key}')">
+                            <span class="${checked ? 'line-through text-slate-500' : ''}">${topic}</span>
+                        </label>
+                    `;
+                }).join('');
+            });
+        }
+
+        function toggleTopic(key) {
+            progress[key] = !progress[key];
+            localStorage.setItem('rrb_progress', JSON.stringify(progress));
+            renderSyllabus();
+        }
+
+        async function askAI(type) {
+            const topic = document.getElementById('ai-topic').value;
+            const output = document.getElementById('ai-output');
+            output.innerText = "Consulting Gemini AI...";
+            try {
+                const res = await fetch('/api/ai-notes', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ topic: topic, type: type })
+                });
+                const data = await res.json();
+                output.innerText = data.success ? data.notes : "Error: " + data.error;
+            } catch(e) {
+                output.innerText = "Error contacting Flask server. Ensure app.py is running!";
+            }
+        }
+
+        function addMock() {
+            const title = document.getElementById('mock-title').value;
+            const score = document.getElementById('mock-score').value;
+            if(!title || !score) return;
+            const list = document.getElementById('mock-list');
+            const li = document.createElement('li');
+            li.className = "p-2 bg-slate-800/50 rounded-lg flex justify-between";
+            li.innerHTML = `<span>${title}</span> <strong class="text-cyan-400">${score}/100</strong>`;
+            list.appendChild(li);
+            document.getElementById('mock-title').value = '';
+            document.getElementById('mock-score').value = '';
+        }
+
+        let timerSec = 1500, timerInt = null;
+        function toggleTimer() {
+            const btn = document.getElementById('timer-btn');
+            if(timerInt) {
+                clearInterval(timerInt);
+                timerInt = null;
+                btn.innerText = "Resume Session";
+            } else {
+                btn.innerText = "Pause Session";
+                timerInt = setInterval(() => {
+                    if(timerSec > 0) {
+                        timerSec--;
+                        const m = String(Math.floor(timerSec / 60)).padStart(2, '0');
+                        const s = String(timerSec % 60).padStart(2, '0');
+                        document.getElementById('timer-display').innerText = `${m}:${s}`;
+                    } else {
+                        clearInterval(timerInt);
+                        alert("Session finished!");
+                    }
+                }, 1000);
+            }
+        }
+
+        renderSyllabus();
+    </script>
+</body>
+</html>
